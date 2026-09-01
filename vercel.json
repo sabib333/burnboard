@@ -10,7 +10,7 @@
     },
     {
       "path": "/api/process-notifications",
-      "schedule": "* * * * *"
+      "schedule": "0 0 * * *"
     }
   ],
   "headers": [
