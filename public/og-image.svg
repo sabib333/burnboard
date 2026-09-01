@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <rect width="1200" height="630" fill="#0a0a0a"/>
+  
+  <!-- Subtle dark grid pattern -->
+  <defs>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#171717" stroke-width="1"/>
+    </pattern>
+    <linearGradient id="flameGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff6622"/>
+      <stop offset="100%" stop-color="#ff4d00"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="60%">
+      <stop offset="0%" stop-color="#ff4d00" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#0a0a0a" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#grid)"/>
+  <circle cx="600" cy="315" r="450" fill="url(#glow)"/>
+
+  <!-- Border Frame -->
+  <rect x="24" y="24" width="1152" height="582" rx="28" fill="none" stroke="#222222" stroke-width="2"/>
+
+  <!-- Header badge -->
+  <g transform="translate(600, 150)">
+    <rect x="-140" y="-22" width="280" height="44" rx="22" fill="#141414" stroke="#ff4d00" stroke-width="1.5" opacity="0.9"/>
+    <text x="0" y="6" fill="#ff4d00" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="800" text-anchor="middle" letter-spacing="3">🔥 100% HUMAN ROASTS</text>
+  </g>
+
+  <!-- Big Brand Title -->
+  <text x="600" y="280" fill="#ffffff" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="96" font-weight="900" text-anchor="middle" letter-spacing="-2">
+    BURN<tspan fill="#ff4d00">BOARD</tspan>
+  </text>
+
+  <!-- Tagline -->
+  <text x="600" y="360" fill="#f0f0f0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="36" font-weight="700" text-anchor="middle" letter-spacing="-0.5">
+    No AI. Just Humans Roasting Humans.
+  </text>
+
+  <!-- Subtitle / Meta -->
+  <text x="600" y="420" fill="#888888" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="20" font-weight="500" text-anchor="middle">
+    The Anonymous Social Media Roast Platform • Live Leaderboard • 1v1 Roast Battles
+  </text>
+
+  <!-- Footer Tag -->
+  <g transform="translate(600, 520)">
+    <rect x="-110" y="-18" width="220" height="36" rx="18" fill="#111111" stroke="#333333" stroke-width="1"/>
+    <text x="0" y="5" fill="#ff4d00" font-family="monospace" font-size="14" font-weight="700" text-anchor="middle">burnboard.app</text>
+  </g>
+</svg>

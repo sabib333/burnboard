@@ -1,0 +1,6 @@
+{
+  "name": "BURNBOARD",
+  "description": "No AI. Just Humans Roasting Humans. Anonymous social roast feed, leaderboards, roast battles, and shareable cards.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

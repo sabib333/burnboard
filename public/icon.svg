@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="96" fill="#0a0a0a"/>
+  <rect x="8" y="8" width="496" height="496" rx="88" fill="none" stroke="#ff4d00" stroke-width="4" opacity="0.3"/>
+  <text x="256" y="220" text-anchor="middle" font-size="200" fill="#ff4d00">🔥</text>
+  <text x="256" y="360" text-anchor="middle" font-family="Arial Black, sans-serif" font-weight="900" font-size="72" fill="white" letter-spacing="4">BURN</text>
+  <text x="256" y="430" text-anchor="middle" font-family="Arial Black, sans-serif" font-weight="900" font-size="72" fill="#ff4d00" letter-spacing="4">BOARD</text>
+</svg>
