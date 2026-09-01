@@ -62,11 +62,11 @@ export const CreateStoryModal: React.FC<CreateStoryModalProps> = ({
         onCreated();
         onClose();
       } else {
-        onShowToast('Failed to publish', 'Please try again.', 'warning');
+        onShowToast('Failed to publish', 'Please try again.');
       }
     } catch (err) {
       console.warn('[CreateStory] Failed:', err);
-      onShowToast('Failed to publish', 'Something went wrong.', 'warning');
+      onShowToast('Failed to publish', 'Something went wrong.');
     } finally {
       setLoading(false);
     }

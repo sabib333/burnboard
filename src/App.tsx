@@ -176,7 +176,7 @@ export default function App() {
         const inputEl = document.querySelector('textarea, input[placeholder*="roast"], input[placeholder*="Roast"]') as HTMLElement;
         if (inputEl) {
           inputEl.focus();
-          addToast('Shortcut [R]', 'Focused roast input chamber.', 'info');
+          addToast('Shortcut [R]', 'Focused roast input chamber.', 'flame');
         }
       } else if (e.key === 'j' || e.key === 'J') {
         e.preventDefault();
@@ -606,8 +606,15 @@ export default function App() {
                 platform={seoPlatformParam}
                 profiles={profiles}
                 roasts={roasts}
-                onOpenProfile={handleOpenProfile}
+                onBack={handleBackToFeed}
+                onSelectProfile={handleOpenProfile}
                 onOpenSubmit={() => setIsSubmitOpen(true)}
+                onUpvoteRoast={handleUpvoteRoast}
+                onReactRoast={handleReactRoast}
+                onSubmitRoast={handleSubmitRoast}
+                onShareRoast={handleShareRoast}
+                onReportRoast={handleReportRoast}
+                onTriggerWarning={(msg) => addToast('Warning', msg, 'danger')}
               />
             )}
 
@@ -687,7 +694,11 @@ export default function App() {
                 roasts={roasts}
                 onBack={handleBackToFeed}
                 onShowToast={(title, msg, type) => {
-                  addToast(title, msg, type === 'info' ? 'flame' : type || 'flame');
+                  if (type === 'warning' || type === 'success' || type === 'flame' || type === 'danger') {
+                    addToast(title, msg, type);
+                  } else {
+                    addToast(title, msg, 'flame');
+                  }
                 }}
               />
             )}

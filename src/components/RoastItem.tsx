@@ -74,7 +74,7 @@ export const RoastItem: React.FC<RoastItemProps> = ({
     } catch (err) {
       console.error(err);
       if (onShowToast) {
-        onShowToast('Download failed', 'Please try again', 'warning');
+        onShowToast('Download failed', 'Please try again');
       }
     } finally {
       setIsExporting(false);

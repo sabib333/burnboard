@@ -22,6 +22,7 @@ export const HoneypotField: React.FC<HoneypotFieldProps> = ({
   return (
     <div
       aria-hidden="true"
+      tabIndex={-1}
       style={{
         position: 'absolute',
         left: '-9999px',
@@ -30,7 +31,6 @@ export const HoneypotField: React.FC<HoneypotFieldProps> = ({
         height: '1px',
         opacity: 0,
         pointerEvents: 'none',
-        tabIndex: -1,
       }}
     >
       <label htmlFor={`hp-${name}`}>Leave this empty</label>

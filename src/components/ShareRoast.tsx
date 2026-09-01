@@ -45,7 +45,7 @@ export const ShareRoast: React.FC<ShareRoastProps> = ({ roast, profile, onShowTo
       onShowToast('Copied to clipboard! 📋');
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      onShowToast('Failed to copy', 'Try again', 'warning');
+      onShowToast('Failed to copy', 'Try again');
     }
   };
 
@@ -76,7 +76,7 @@ export const ShareRoast: React.FC<ShareRoastProps> = ({ roast, profile, onShowTo
       onShowToast('Card downloaded! 🔥', 'Share it on social media');
     } catch (err) {
       console.warn('[ShareRoast] Download failed:', err);
-      onShowToast('Download failed', 'Try again later', 'warning');
+      onShowToast('Download failed', 'Try again later');
     } finally {
       setDownloading(false);
     }

@@ -113,7 +113,7 @@ export const BattleArena: React.FC<BattleArenaProps> = ({
       onShowToast('Battle Card Downloaded! ⚔️', '1080x1080 viral match card ready to share on X / Reddit');
     } catch (err) {
       console.error(err);
-      onShowToast('Share error', 'Could not render battle card image', 'warning');
+      onShowToast('Share error', 'Could not render battle card image');
     } finally {
       setIsSharing(false);
     }

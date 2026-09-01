@@ -123,7 +123,7 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ username, onBa
       if (following) {
         const result = await unfollowUser(user.id, profile.id);
         if (result.error) {
-          onShowToast('Error', result.error, 'warning');
+          onShowToast('Error', result.error);
         } else {
           setFollowing(false);
           setFollowCounts(prev => ({ ...prev, followers: Math.max(0, prev.followers - 1) }));
@@ -132,7 +132,7 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ username, onBa
       } else {
         const result = await followUser(user.id, profile.id);
         if (result.error) {
-          onShowToast('Error', result.error, 'warning');
+          onShowToast('Error', result.error);
         } else {
           setFollowing(true);
           setFollowCounts(prev => ({ ...prev, followers: prev.followers + 1 }));

@@ -53,9 +53,9 @@ export const SponsorAdSlot: React.FC<SponsorAdSlotProps> = ({ position }) => {
   // Track impression
   useEffect(() => {
     if (sponsor?.id && isSupabaseConfigured && supabase) {
-      supabase.rpc('increment_impressions' as any, { sponsor_id: sponsor.id }).catch(() => {
+      Promise.resolve(supabase.rpc('increment_impressions' as any, { sponsor_id: sponsor.id })).catch(() => {
         // Fallback: manual increment
-        supabase.from('sponsors').update({ impressions: (sponsor as any).impressions + 1 }).eq('id', sponsor.id).catch(() => {});
+        Promise.resolve(supabase.from('sponsors').update({ impressions: (sponsor as any).impressions + 1 }).eq('id', sponsor.id)).catch(() => {});
       });
     }
   }, [sponsor?.id]);
@@ -81,7 +81,7 @@ export const SponsorAdSlot: React.FC<SponsorAdSlotProps> = ({ position }) => {
               onClick={() => {
                 // Track click
                 if (isSupabaseConfigured && supabase) {
-                  supabase.from('sponsors').update({ clicks: ((sponsor as any).clicks || 0) + 1 }).eq('id', sponsor.id).catch(() => {});
+                  Promise.resolve(supabase.from('sponsors').update({ clicks: ((sponsor as any).clicks || 0) + 1 }).eq('id', sponsor.id)).catch(() => {});
                 }
               }}
             >

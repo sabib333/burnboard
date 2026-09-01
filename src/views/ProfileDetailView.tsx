@@ -134,7 +134,7 @@ export const ProfileDetailView: React.FC<ProfileDetailViewProps> = ({
       onShowToast('1080x1080 OG Card Generated! 🔥', 'High-res card saved to your device.');
     } catch (err) {
       console.error(err);
-      onShowToast('Export error', 'Could not generate card', 'warning');
+      onShowToast('Export error', 'Could not generate card');
     } finally {
       setIsExportingHero(false);
     }

@@ -33,7 +33,7 @@ export const DeleteDataModal: React.FC<DeleteDataModalProps> = ({
       setUsername('');
       onClose();
     } else {
-      onShowToast(`Profile @${cleanUser} not found`, 'Double check the spelling of the username handle.', 'warning');
+      onShowToast(`Profile @${cleanUser} not found`, 'Double check the spelling of the username handle.');
     }
   };
 

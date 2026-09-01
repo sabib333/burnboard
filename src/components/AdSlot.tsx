@@ -89,7 +89,7 @@ export const AdSlot: React.FC<AdSlotProps> = ({ slotIndex = 1 }) => {
               className="flex items-center gap-1 text-[10px] font-mono text-[#ff4d00] hover:underline"
               onClick={() => {
                 if (isSupabaseConfigured && supabase) {
-                  supabase.from('sponsors').update({ clicks: 0 }).eq('id', sponsor.id).catch(() => {});
+                  Promise.resolve(supabase.from('sponsors').update({ clicks: 0 }).eq('id', sponsor.id)).catch(() => {});
                 }
                 track('ad_clicked', { slotIndex, sponsorId: sponsor.id });
               }}
