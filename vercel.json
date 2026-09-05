@@ -25,6 +25,30 @@
       "headers": [
         { "key": "Cache-Control", "value": "public, s-maxage=3600, stale-while-revalidate=86400" }
       ]
+    },
+    {
+      "source": "/api/trending",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, s-maxage=15, stale-while-revalidate=30" }
+      ]
+    },
+    {
+      "source": "/api/leaderboard",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, s-maxage=30, stale-while-revalidate=60" }
+      ]
+    },
+    {
+      "source": "/api/weekly-recap",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, s-maxage=60, stale-while-revalidate=120" }
+      ]
+    },
+    {
+      "source": "/api/health",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store" }
+      ]
     }
   ]
 }

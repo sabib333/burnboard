@@ -160,10 +160,12 @@ export const DataStore = {
     }
   },
 
-  async createRoast(profileId: string, roastText: string, customAnonId?: string, userId?: string): Promise<Roast> {
+  async createRoast(profileId: string, roastText: string, customAnonId?: string, userId?: string, savageLevel?: string): Promise<Roast> {
     requireSupabase();
 
     const anonId = customAnonId || generateAnonId();
+    const validLevels = ['mild', 'savage', 'toxic', 'bangla'];
+    const level = validLevels.includes(savageLevel || '') ? savageLevel : 'savage';
 
     const { data: newRoast, error } = await supabase!
       .from('roasts')
@@ -176,6 +178,7 @@ export const DataStore = {
         reaction_cry: 0,
         anon_id: anonId,
         user_id: userId || null,
+        savage_level: level,
       })
       .select()
       .single();

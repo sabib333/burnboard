@@ -14,7 +14,7 @@ interface PlatformSeoViewProps {
   onOpenSubmit: () => void;
   onUpvoteRoast: (roastId: string) => void;
   onReactRoast: (roastId: string, reaction: 'haha' | 'brutal' | 'cry') => void;
-  onSubmitRoast: (profileId: string, text: string, anonId: string) => Promise<void>;
+  onSubmitRoast: (profileId: string, text: string, anonId: string, savageLevel?: string) => Promise<void>;
   onShareRoast: (roast: Roast) => void;
   onReportRoast: (roastId: string) => void;
   onTriggerWarning: (message: string, subtext?: string) => void;

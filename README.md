@@ -135,7 +135,8 @@ Set the following environment variables in your Vercel Project Dashboard:
    - Hall of Fame for top anonymous roasters
 
 4. **Analytics & Admin Dashboard**:
-   - Hidden `/admin` dashboard (Password: `burn2024`)
+   - `/admin` dashboard — gated by the `ADMIN_PASSWORD` environment variable
+     (fail-closed: no default password; see `.env.example`)
    - Real-time event tracking (`profile_submitted`, `roast_submitted`, `upvote_clicked`, `battle_voted`, `share_clicked`)
    - Vercel Analytics integration
 

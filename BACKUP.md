@@ -5,8 +5,10 @@ BURNBOARD provides multiple zero-cost mechanisms to backup, snapshot, and restor
 ---
 
 ## 💾 1. Instant One-Click JSON Backup (Admin Dashboard)
-1. Go to the Admin dashboard: `/#admin`
-2. Enter the admin key (`burn2024`)
+1. Go to the Admin dashboard: `/admin`
+2. Enter the admin password — the value of the `ADMIN_PASSWORD` environment
+   variable (no default; the gate fails closed if it is not set — see
+   `docs/security/SECURITY_MODEL.md`).
 3. Click the **"Export Backup"** / **"Export JSON"** button in the top right.
 4. A full JSON snapshot will download with:
    - `profiles`

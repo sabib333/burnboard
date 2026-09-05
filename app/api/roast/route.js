@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { instrumentHandler } from '@/lib/metrics';
 import { isProfane } from '@/lib/filter';
 
 const SALT = process.env.RATE_LIMIT_SALT || 'burnboard_secret_salt_2024';
@@ -9,10 +10,10 @@ function hashIp(ip) {
   return crypto.createHash('sha256').update((ip || '127.0.0.1') + SALT).digest('hex').substring(0, 16);
 }
 
-export async function POST(req) {
+async function postHandler(req) {
   try {
     const body = await req.json();
-    const { profile_id, roast_text, anon_id } = body;
+    const { profile_id, roast_text, anon_id, savage_level } = body;
 
     if (!profile_id || !roast_text || !roast_text.trim()) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -82,6 +83,9 @@ export async function POST(req) {
       }
 
       // 6. Insert new roast
+      const validLevels = ['mild', 'savage', 'toxic', 'bangla'];
+      const level = validLevels.includes(savage_level) ? savage_level : 'savage';
+
       const newRoast = {
         profile_id,
         roast_text: roast_text.trim(),
@@ -91,6 +95,7 @@ export async function POST(req) {
         reaction_haha: 0,
         reaction_brutal: 0,
         reaction_cry: 0,
+        savage_level: level,
         created_at: new Date().toISOString()
       };
 
@@ -141,3 +146,5 @@ export async function POST(req) {
     return NextResponse.json({ error: err.message || 'Internal Server Error' }, { status: 500 });
   }
 }
+
+export const POST = instrumentHandler('roast', postHandler);

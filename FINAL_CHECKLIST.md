@@ -15,7 +15,8 @@
 - [ ] (Optional) Set `RESEND_API_KEY` if using email notifications
 
 ### Security
-- [ ] Change admin password from default `burn2024` in admin panel
+- [ ] Set `ADMIN_PASSWORD` (strong random) in every environment — admin surfaces fail closed (503) without it; there is no default
+- [ ] Set `CRON_SECRET` (strong random) so scheduled endpoints stay fail-closed
 - [ ] Verify content filter blocks slurs and hate speech
 - [ ] Test rate limiting (30s cooldown between roasts)
 

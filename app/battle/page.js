@@ -1,151 +1,182 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
-import { ProfileCardSkeleton } from '@/components/Skeleton';
-import LiveStats from '@/components/LiveStats';
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import {
-  Swords, Flame, RefreshCw, ArrowRight, Loader2
+  Swords, Flame, RefreshCw, Loader2, Share2, Check
 } from 'lucide-react';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { getOrCreateAnonId } from '@/src/lib/presence';
+import LiveStats from '@/components/LiveStats';
+import { track } from '@/lib/analytics';
+
+/**
+ * /battle — Roast Arena (Master Prompt 9 hardening)
+ *
+ * Matchups are created server-side; votes are recorded in real vote rows via
+ * the cast_battle_vote RPC and totals are derived from those rows. The client
+ * never owns counts. Vote policy: one vote per person per matchup, and you can
+ * switch your vote while the matchup is open.
+ */
+
+function fmt(n) {
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
+  return String(n);
+}
 
 export default function BattlePage() {
-  const [profiles, setProfiles] = useState([]);
+  const searchParams = useSearchParams();
+  const battleParam = searchParams.get('battle');
+
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [emptyReason, setEmptyReason] = useState('');
   const [fighter1, setFighter1] = useState(null);
   const [fighter2, setFighter2] = useState(null);
-  const [activeBattle, setActiveBattle] = useState(null);
-  const [hasVoted, setHasVoted] = useState(null);
   const [roasts1, setRoasts1] = useState([]);
   const [roasts2, setRoasts2] = useState([]);
+  const [battleId, setBattleId] = useState(null);
+  const [votes1, setVotes1] = useState(0);
+  const [votes2, setVotes2] = useState(0);
+  const [viewerVote, setViewerVote] = useState(null);
+  const [voting, setVoting] = useState(null);
+  const [copied, setCopied] = useState(false);
 
-  // ── Fetch all profiles ─────────────────────────────────────
-  const fetchProfiles = useCallback(async () => {
+  const getViewerKey = () => {
+    if (typeof window === 'undefined') return '';
+    return getOrCreateAnonId();
+  };
+
+  const fetchMatchup = useCallback(async (battleIdToLoad) => {
+    setLoading(true);
+    setError('');
+    setEmptyReason('');
+    try {
+      const participantId = encodeURIComponent(getViewerKey());
+      const url = battleIdToLoad
+        ? `/api/battle/${battleIdToLoad}?participant_id=${participantId}`
+        : `/api/battle/random?participant_id=${participantId}`;
+      const res = await fetch(url);
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || 'Failed to load battle');
+        setLoading(false);
+        return;
+      }
+
+      if (data.empty) {
+        setEmptyReason(data.reason || 'not-enough-fighters');
+        setLoading(false);
+        return;
+      }
+
+      setFighter1(data.profile1);
+      setFighter2(data.profile2);
+      setRoasts1(data.roasts1 || []);
+      setRoasts2(data.roasts2 || []);
+      setBattleId(data.battle.id);
+      setVotes1(data.votes1 || 0);
+      setVotes2(data.votes2 || 0);
+      setViewerVote(data.viewerVote || null);
+      setVoting(null);
+
+      // Make the current matchup shareable without leaving the arena
+      if (typeof window !== 'undefined' && !battleIdToLoad) {
+        window.history.replaceState(null, '', `/battle?battle=${data.battle.id}`);
+      }
+      setLoading(false);
+    } catch (err) {
+      console.error('[Battle] Load error:', err);
+      setError('Failed to load battle');
+      setLoading(false);
+    }
+  }, []);
+
+  // Initial load: explicit matchup (?battle=) or a fresh random one
+  useEffect(() => {
     if (!isSupabaseConfigured || !supabase) {
       setLoading(false);
       return;
     }
-    try {
-      const { data } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
-      setProfiles(data || []);
-    } catch (err) {
-      console.error('[Battle] Fetch profiles error:', err);
-    } finally {
-      setLoading(false);
-    }
+    fetchMatchup(battleParam || null);
+    track('battle_opened', { viaLink: !!battleParam });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ── Realtime: live totals from the canonical battles row ─────
   useEffect(() => {
-    fetchProfiles();
-  }, [fetchProfiles]);
-
-  // ── Pick 2 random fighters ─────────────────────────────────
-  const pickRandomFighters = useCallback(async (profileList) => {
-    if (!profileList || profileList.length < 2) return;
-    const shuffled = [...profileList].sort(() => 0.5 - Math.random());
-    const p1 = shuffled[0];
-    const p2 = shuffled[1];
-    setFighter1(p1);
-    setFighter2(p2);
-    setHasVoted(null);
-
-    // Fetch roasts for each fighter
-    const [r1, r2] = await Promise.all([
-      supabase.from('roasts').select('*').eq('profile_id', p1.id).order('created_at', { ascending: false }).limit(2),
-      supabase.from('roasts').select('*').eq('profile_id', p2.id).order('created_at', { ascending: false }).limit(2),
-    ]);
-    setRoasts1(r1.data || []);
-    setRoasts2(r2.data || []);
-
-    // Find or create battle
-    if (!isSupabaseConfigured || !supabase) return;
-
-    const { data: existing } = await supabase
-      .from('battles')
-      .select('*')
-      .or(`and(profile1_id.eq.${p1.id},profile2_id.eq.${p2.id}),and(profile1_id.eq.${p2.id},profile2_id.eq.${p1.id})`)
-      .limit(1);
-
-    if (existing && existing.length > 0) {
-      setActiveBattle(existing[0]);
-    } else {
-      const { data: newBattle } = await supabase
-        .from('battles')
-        .insert({
-          profile1_id: p1.id,
-          profile2_id: p2.id,
-          votes1: 0,
-          votes2: 0,
-        })
-        .select()
-        .single();
-      if (newBattle) setActiveBattle(newBattle);
-    }
-  }, []);
-
-  // Auto-pick when profiles load
-  useEffect(() => {
-    if (profiles.length >= 2 && !fighter1 && !loading) {
-      pickRandomFighters(profiles);
-    }
-  }, [profiles, fighter1, loading, pickRandomFighters]);
-
-  // ── Realtime subscription for this battle ───────────────────
-  useEffect(() => {
-    if (!isSupabaseConfigured || !supabase || !activeBattle) return;
+    if (!isSupabaseConfigured || !supabase || !battleId) return;
 
     const channel = supabase
-      .channel(`battle-${activeBattle.id}`)
+      .channel(`battle-${battleId}`)
       .on(
         'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'battles', filter: `id=eq.${activeBattle.id}` },
+        { event: 'UPDATE', schema: 'public', table: 'battles', filter: `id=eq.${battleId}` },
         (payload) => {
-          setActiveBattle(payload.new);
+          const next = payload.new;
+          if (typeof next.votes1 === 'number') setVotes1(next.votes1);
+          if (typeof next.votes2 === 'number') setVotes2(next.votes2);
         }
       )
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [activeBattle?.id]);
+  }, [battleId]);
 
-  // ── Vote Handler ───────────────────────────────────────────
+  // ── Vote (server-controlled; switching allowed while open) ──
   const handleVote = async (candidate) => {
-    if (!activeBattle || hasVoted) return;
-    setHasVoted(candidate);
-
-    // Optimistic update
-    setActiveBattle(prev => ({
-      ...prev,
-      votes1: candidate === 1 ? (prev.votes1 || 0) + 1 : (prev.votes1 || 0),
-      votes2: candidate === 2 ? (prev.votes2 || 0) + 1 : (prev.votes2 || 0),
-    }));
-
+    if (!battleId || voting !== null) return;
+    setVoting(candidate);
     try {
-      if (candidate === 1) {
-        await supabase.from('battles').update({ votes1: (activeBattle.votes1 || 0) + 1 }).eq('id', activeBattle.id);
-      } else {
-        await supabase.from('battles').update({ votes2: (activeBattle.votes2 || 0) + 1 }).eq('id', activeBattle.id);
+      const res = await fetch(`/api/battle/${battleId}/vote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          selection: candidate,
+          participant_id: getViewerKey(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        console.error('[Battle] Vote error:', data.error);
+        return;
       }
+      setVotes1(data.votes1 || 0);
+      setVotes2(data.votes2 || 0);
+      setViewerVote(candidate);
+      track('battle_vote_added', { battle_id: battleId, action: data.action });
     } catch (err) {
       console.error('[Battle] Vote failed:', err);
+    } finally {
+      setVoting(null);
     }
   };
 
-  // ── Next Battle ────────────────────────────────────────────
+  // ── Next matchup ───────────────────────────────────────────
   const handleNext = () => {
-    setHasVoted(null);
-    setActiveBattle(null);
+    setBattleId(null);
     setFighter1(null);
     setFighter2(null);
     setRoasts1([]);
     setRoasts2([]);
+    setViewerVote(null);
+    fetchMatchup(null);
   };
 
-  // ── Vote Percentages ───────────────────────────────────────
-  const totalVotes = (activeBattle?.votes1 || 0) + (activeBattle?.votes2 || 0);
-  const pct1 = totalVotes > 0 ? Math.round(((activeBattle?.votes1 || 0) / totalVotes) * 100) : 50;
+  // ── Share current matchup link ─────────────────────────────
+  const handleShare = async () => {
+    const url = typeof window !== 'undefined' ? window.location.href : '';
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {}
+  };
+
+  const totalVotes = votes1 + votes2;
+  const pct1 = totalVotes > 0 ? Math.round((votes1 / totalVotes) * 100) : 50;
   const pct2 = 100 - pct1;
 
   // ── Loading ────────────────────────────────────────────────
@@ -155,73 +186,50 @@ export default function BattlePage() {
         <div className="max-w-4xl mx-auto space-y-6">
           <header className="text-center space-y-2 py-6 border-b border-[#222]">
             <div className="flex items-center justify-center gap-2 text-[#ff4d00]">
-              <Swords className="w-8 h-8 text-[#ff4d00]" />
+              <Swords className="w-8 h-8" aria-hidden="true" />
               <h1 className="text-2xl font-black uppercase tracking-wider font-mono">Battle Arena</h1>
             </div>
           </header>
-          <div className="space-y-4">
-            <ProfileCardSkeleton />
-            <ProfileCardSkeleton />
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="w-6 h-6 text-[#ff4d00] animate-spin" aria-hidden="true" />
           </div>
         </div>
       </div>
     );
   }
 
-  // ── Not Configured ─────────────────────────────────────────
-  if (!isSupabaseConfigured || !supabase) {
+  // ── Error / Empty ──────────────────────────────────────────
+  if (error || emptyReason) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] text-white p-4 sm:p-6 font-sans">
         <div className="max-w-4xl mx-auto space-y-6">
           <header className="text-center space-y-2 py-6 border-b border-[#222]">
             <div className="flex items-center justify-center gap-2 text-[#ff4d00]">
-              <Swords className="w-8 h-8 text-[#ff4d00]" />
+              <Swords className="w-8 h-8" aria-hidden="true" />
               <h1 className="text-2xl font-black uppercase tracking-wider font-mono">Battle Arena</h1>
             </div>
           </header>
           <div className="bg-[#111] border border-dashed border-[#333] rounded-2xl p-10 text-center space-y-4">
-            <div className="text-4xl">⚔️</div>
-            <h2 className="text-lg font-bold text-white uppercase">Supabase Not Configured</h2>
-            <p className="text-xs text-zinc-400">Connect Supabase to start battles.</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ── Empty State: Less than 2 profiles ──────────────────────
-  if (profiles.length < 2) {
-    return (
-      <div className="min-h-screen bg-[#0a0a0a] text-white p-4 sm:p-6 font-sans">
-        <div className="max-w-4xl mx-auto space-y-6">
-          <header className="text-center space-y-2 py-6 border-b border-[#222]">
-            <div className="flex items-center justify-center gap-2 text-[#ff4d00]">
-              <Swords className="w-8 h-8 text-[#ff4d00]" />
-              <h1 className="text-2xl font-black uppercase tracking-wider font-mono">Battle Arena</h1>
-            </div>
-          </header>
-          <div className="bg-[#111] border border-dashed border-[#333] rounded-2xl p-10 text-center space-y-4">
-            <div className="text-5xl">⚔️</div>
-            <h3 className="text-lg font-bold text-white uppercase tracking-wider">Need more targets</h3>
-            <p className="text-sm text-zinc-400 mt-2 max-w-md mx-auto">
-              Battles require at least 2 profiles. Currently at{' '}
-              <span className="text-[#ff4d00] font-bold">{profiles.length}/2</span>.
-              Invite friends to get roasted!
+            <div className="text-5xl" aria-hidden="true">{error ? '💥' : '⚔️'}</div>
+            <h2 className="text-lg font-bold text-white uppercase">
+              {error ? 'Battle unavailable' : 'Need more fighters'}
+            </h2>
+            <p className="text-sm text-zinc-400 mt-2 max-w-md mx-auto font-mono">
+              {error || 'Battles require at least 2 profiles with real burns. Invite friends to get roasted!'}
             </p>
+            <Link
+              href="/hot-seat"
+              className="inline-block px-5 py-2.5 bg-[#ff4d00] text-black font-bold text-xs rounded-xl hover:bg-[#ff6622] transition-all"
+            >
+              Create a Hot Seat
+            </Link>
           </div>
         </div>
       </div>
     );
   }
 
-  // ── Waiting for fighters ───────────────────────────────────
-  if (!fighter1 || !fighter2 || !activeBattle) {
-    return (
-      <div className="min-h-screen bg-[#0a0a0a] text-white flex items-center justify-center">
-        <Loader2 className="w-6 h-6 text-[#ff4d00] animate-spin" />
-      </div>
-    );
-  }
+  if (!fighter1 || !fighter2 || !battleId) return null;
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white p-4 sm:p-6 font-sans">
@@ -229,11 +237,11 @@ export default function BattlePage() {
         {/* Header Banner */}
         <div className="bg-gradient-to-r from-red-950/40 via-[#111] to-blue-950/40 border border-[#333] rounded-2xl p-5 sm:p-6 text-center relative overflow-hidden shadow-2xl">
           <div className="flex items-center justify-center gap-2 mb-1">
-            <Swords className="w-6 h-6 text-[#ff4d00] animate-bounce" />
+            <Swords className="w-6 h-6 text-[#ff4d00] animate-bounce" aria-hidden="true" />
             <h1 className="text-xl sm:text-2xl font-black text-white uppercase italic tracking-tight">
               Roast Arena: Head-to-Head Battle
             </h1>
-            <Swords className="w-6 h-6 text-blue-400 animate-bounce" />
+            <Swords className="w-6 h-6 text-blue-400 animate-bounce" aria-hidden="true" />
           </div>
           <p className="text-xs sm:text-sm text-zinc-400 max-w-lg mx-auto">
             Who got destroyed harder by real humans? Vote to decide.
@@ -249,7 +257,11 @@ export default function BattlePage() {
               <span className="text-zinc-500">{totalVotes.toLocaleString()} TOTAL VOTES</span>
               <span className="text-blue-400">@{fighter2.username} ({pct2}%)</span>
             </div>
-            <div className="h-3 bg-[#1c1c1c] rounded-full overflow-hidden flex border border-[#333] p-0.5">
+            <div
+              className="h-3 bg-[#1c1c1c] rounded-full overflow-hidden flex border border-[#333] p-0.5"
+              role="img"
+              aria-label={`${fighter1.username} ${pct1}%, ${fighter2.username} ${pct2}%`}
+            >
               <div
                 className="bg-gradient-to-r from-orange-600 to-[#ff4d00] h-full rounded-l-full transition-all duration-500"
                 style={{ width: `${pct1}%` }}
@@ -259,6 +271,29 @@ export default function BattlePage() {
                 style={{ width: `${pct2}%` }}
               />
             </div>
+            <p className="text-[10px] font-mono text-zinc-600 mt-2">
+              One vote per person · Tap again to switch your vote · Votes are real and server-counted
+            </p>
+          </div>
+
+          {/* Share matchup */}
+          <div className="flex justify-center gap-3 mt-3">
+            <button
+              onClick={handleShare}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#161616] hover:bg-[#222] border border-[#333] hover:border-[#ff4d00]/40 text-[11px] font-mono text-zinc-300 transition-all"
+              aria-label="Copy link to this matchup"
+            >
+              {copied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Share2 className="w-3.5 h-3.5" />}
+              {copied ? 'Link copied!' : 'Share matchup'}
+            </button>
+            <button
+              onClick={handleNext}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#161616] hover:bg-[#222] border border-[#333] hover:border-[#ff4d00]/40 text-[11px] font-mono text-zinc-300 transition-all"
+              aria-label="Load the next random matchup"
+            >
+              <RefreshCw className="w-3.5 h-3.5 text-[#ff4d00]" />
+              Next matchup
+            </button>
           </div>
         </div>
 
@@ -273,7 +308,7 @@ export default function BattlePage() {
 
           {/* Fighter 1 (Red) */}
           <div className={`bg-[#111] border rounded-2xl p-5 sm:p-6 shadow-2xl flex flex-col justify-between transition-all duration-200 ${
-            hasVoted === 1
+            viewerVote === 1
               ? 'border-[#ff4d00] shadow-[0_0_30px_rgba(255,77,0,0.3)] ring-1 ring-[#ff4d00]'
               : 'border-[#222] hover:border-[#333]'
           }`}>
@@ -292,7 +327,7 @@ export default function BattlePage() {
                   <p className="text-xs text-zinc-300 mt-1 leading-relaxed line-clamp-3">{fighter1.bio}</p>
                   <div className="flex items-center gap-3 mt-2 text-xs font-mono text-zinc-400">
                     <span>🔥 {fighter1.roast_count || 0} burns</span>
-                    <span>▲ {fighter1.total_upvotes || 0} upvotes</span>
+                    <span>▲ {fmt(fighter1.total_upvotes || 0)} upvotes</span>
                   </div>
                 </div>
               </div>
@@ -308,27 +343,33 @@ export default function BattlePage() {
                 )}
               </div>
             </div>
-            <div className="mt-6 pt-4 border-t border-[#222] flex items-center justify-between gap-3">
+            <div className="mt-6 pt-4 border-t border-[#222]">
               <button
                 onClick={() => handleVote(1)}
-                disabled={!!hasVoted}
-                className={`flex-1 py-3 px-4 rounded-xl font-extrabold text-xs sm:text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
-                  hasVoted === 1
+                disabled={voting !== null}
+                aria-pressed={viewerVote === 1}
+                className={`w-full py-3 px-4 rounded-xl font-extrabold text-xs sm:text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2 disabled:opacity-60 ${
+                  viewerVote === 1
                     ? 'bg-[#ff4d00] text-black shadow-[0_0_20px_rgba(255,77,0,0.5)]'
-                    : hasVoted
-                    ? 'bg-[#1a1a1a] text-zinc-600 border border-[#333] cursor-not-allowed'
                     : 'bg-[#1a1a1a] hover:bg-[#ff4d00] text-white hover:text-black border border-[#333]'
                 }`}
               >
-                <Flame className="w-4 h-4" />
-                <span>{hasVoted === 1 ? 'Voted! 🔥' : `Vote @${fighter1.username}`}</span>
+                {voting === 1 ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : viewerVote === 1 ? (
+                  <><Check className="w-4 h-4" /> Your vote — @{fighter1.username}</>
+                ) : viewerVote === 2 ? (
+                  <><RefreshCw className="w-4 h-4" /> Switch to @{fighter1.username}</>
+                ) : (
+                  <><Flame className="w-4 h-4" /> Vote @{fighter1.username}</>
+                )}
               </button>
             </div>
           </div>
 
           {/* Fighter 2 (Blue) */}
           <div className={`bg-[#111] border rounded-2xl p-5 sm:p-6 shadow-2xl flex flex-col justify-between transition-all duration-200 ${
-            hasVoted === 2
+            viewerVote === 2
               ? 'border-blue-500 shadow-[0_0_30px_rgba(59,130,246,0.3)] ring-1 ring-blue-500'
               : 'border-[#222] hover:border-[#333]'
           }`}>
@@ -347,7 +388,7 @@ export default function BattlePage() {
                   <p className="text-xs text-zinc-300 mt-1 leading-relaxed line-clamp-3">{fighter2.bio}</p>
                   <div className="flex items-center gap-3 mt-2 text-xs font-mono text-zinc-400">
                     <span>🔥 {fighter2.roast_count || 0} burns</span>
-                    <span>▲ {fighter2.total_upvotes || 0} upvotes</span>
+                    <span>▲ {fmt(fighter2.total_upvotes || 0)} upvotes</span>
                   </div>
                 </div>
               </div>
@@ -363,20 +404,26 @@ export default function BattlePage() {
                 )}
               </div>
             </div>
-            <div className="mt-6 pt-4 border-t border-[#222] flex items-center justify-between gap-3">
+            <div className="mt-6 pt-4 border-t border-[#222]">
               <button
                 onClick={() => handleVote(2)}
-                disabled={!!hasVoted}
-                className={`flex-1 py-3 px-4 rounded-xl font-extrabold text-xs sm:text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
-                  hasVoted === 2
+                disabled={voting !== null}
+                aria-pressed={viewerVote === 2}
+                className={`w-full py-3 px-4 rounded-xl font-extrabold text-xs sm:text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2 disabled:opacity-60 ${
+                  viewerVote === 2
                     ? 'bg-blue-500 text-black shadow-[0_0_20px_rgba(59,130,246,0.5)]'
-                    : hasVoted
-                    ? 'bg-[#1a1a1a] text-zinc-600 border border-[#333] cursor-not-allowed'
                     : 'bg-[#1a1a1a] hover:bg-blue-500 text-white hover:text-black border border-[#333]'
                 }`}
               >
-                <Flame className="w-4 h-4" />
-                <span>{hasVoted === 2 ? 'Voted! 💀' : `Vote @${fighter2.username}`}</span>
+                {voting === 2 ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : viewerVote === 2 ? (
+                  <><Check className="w-4 h-4" /> Your vote — @{fighter2.username}</>
+                ) : viewerVote === 1 ? (
+                  <><RefreshCw className="w-4 h-4" /> Switch to @{fighter2.username}</>
+                ) : (
+                  <><Flame className="w-4 h-4" /> Vote @{fighter2.username}</>
+                )}
               </button>
             </div>
           </div>
@@ -388,7 +435,7 @@ export default function BattlePage() {
             onClick={handleNext}
             className="px-6 py-3 bg-[#161616] hover:bg-[#222] text-white font-extrabold rounded-xl border border-[#333] hover:border-[#ff4d00]/50 transition-all flex items-center gap-2 text-xs uppercase tracking-wider shadow-lg active:scale-95"
           >
-            <RefreshCw className="w-4 h-4 text-[#ff4d00]" />
+            <RefreshCw className="w-4 h-4 text-[#ff4d00]" aria-hidden="true" />
             <span>Next Battle Matchup</span>
           </button>
         </div>

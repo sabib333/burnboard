@@ -9,11 +9,17 @@
 
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { processAiJobs } from '@/lib/ai/worker';
+import { captureDailySnapshot } from '@/lib/growth/analytics';
+import { captureDailyRevenueSnapshot } from '@/lib/monetization/revenueAnalytics';
+import { processWebhookDeliveries } from '@/lib/platform/webhooks';
 
 export async function GET(request) {
-  // Verify cron secret
+  // Verify cron secret — fail closed. If CRON_SECRET is not configured this
+  // route must not run at all (it performs deletes and queue processing).
   const authHeader = request.headers.get('authorization');
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -48,30 +54,12 @@ export async function GET(request) {
     if (logsErr) results.logsError = logsErr.message;
 
     // 3. Update profile roast_count for consistency
-    // Count actual roasts per profile and update
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('id');
+    // Batch refresh via RPC (single aggregate statement) — replaces the
+    // old per-profile loop that issued O(profiles) queries per run.
+    const { data: refreshResult, error: refreshErr } = await supabase.rpc('refresh_profile_roast_counts');
+    results.profilesUpdated = refreshResult || 0;
+    if (refreshErr) results.roastCountRefreshError = refreshErr.message;
 
-    if (profiles && profiles.length > 0) {
-      let updated = 0;
-      for (const profile of profiles) {
-        const { count } = await supabase
-          .from('roasts')
-          .select('id', { count: 'exact', head: true })
-          .eq('profile_id', profile.id)
-          .eq('is_hidden', false);
-
-        if (count !== undefined) {
-          await supabase
-            .from('profiles')
-            .update({ roast_count: count })
-            .eq('id', profile.id);
-          updated++;
-        }
-      }
-      results.profilesUpdated = updated;
-    }
 
     // 4. Deactivate expired challenges
     const { count: challengesDeactivated } = await supabase
@@ -81,6 +69,36 @@ export async function GET(request) {
       .lt('expires_at', new Date().toISOString());
 
     results.challengesDeactivated = challengesDeactivated || 0;
+
+    // 5. AI background jobs (content understanding, embeddings, quality)
+    // Runs daily inside the existing cleanup cron so no additional Vercel
+    // cron slot is consumed on Hobby. Idempotent and failure-safe.
+    const aiResult = await processAiJobs(supabase, { batchSize: 50 });
+    results.ai = aiResult;
+
+    // 6. Growth snapshot: persist today's aggregate metrics for cohort /
+    // retention history. Idempotent per date; never blocks cleanup.
+    const growthResult = await captureDailySnapshot(supabase);
+    results.growthSnapshot = growthResult;
+
+    // 7. Revenue snapshot: persist today's ledger-derived monetization
+    // aggregates (gross/net by day, by product type, payout state, payment
+    // health). Idempotent per date; never blocks cleanup.
+    const revenueResult = await captureDailyRevenueSnapshot(supabase);
+    results.revenueSnapshot = revenueResult;
+
+    // 8. Platform webhook deliveries: deliver due signed webhook events to
+    // subscribed third-party endpoints (idempotent, retry with backoff).
+    const webhookResult = await processWebhookDeliveries(supabase, { batchSize: 25 });
+    results.webhooks = webhookResult;
+
+    // 9. Referral rewards sweep (MP23): grant karma to referrers whose
+    // referred users ACTIVATED (strong first-value activity within 7 days of
+    // conversion). Idempotent per referral visit, monthly-capped, and gated
+    // on real activation — raw signups never earn rewards.
+    const sweepResult = await supabase.rpc('sweep_referral_rewards');
+    results.referralRewardsGranted = sweepResult.error ? null : (sweepResult.data || 0);
+    if (sweepResult.error) results.referralRewardsError = sweepResult.error.message;
 
     console.log('[Cron] Cleanup completed:', results);
 

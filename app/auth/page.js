@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Flame, Mail, Lock, User, Eye, EyeOff, ArrowRight, Loader2, Check, AlertTriangle } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { safeInternalPath } from '@/lib/growth/referral';
 
 function getPasswordStrength(pw) {
   let score = 0;
@@ -33,12 +34,50 @@ export default function AuthPage() {
 
   const passwordStrength = getPasswordStrength(password);
 
+  // ── Post-signup continuation (Master Prompt 14) ────────────
+  // Read the visitor's intended destination + optional referral from the URL
+  // so a shared link → signup → original content loop keeps its context.
+  const getNextPath = () => {
+    try {
+      return safeInternalPath(new URLSearchParams(window.location.search).get('next')) || null;
+    } catch { return null; }
+  };
+
+  const getRefCode = () => {
+    try {
+      const ref = (new URLSearchParams(window.location.search).get('ref') || '').trim();
+      return /^[a-z0-9]{6,12}$/i.test(ref) ? ref : null;
+    } catch { return null; }
+  };
+
+  // Fire the real signup-destination save + referral claim (best-effort).
+  const fireAttribution = useCallback(async ({ next, ref, isSignup }) => {
+    if (isSignup && next) {
+      fetch('/api/signup/destination', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: next, ref: ref || '' }),
+      }).catch(() => {});
+    }
+    if (ref) {
+      // If the auth page itself carries ?ref=, record the visit up-front.
+      fetch(`/api/referral/visit?code=${encodeURIComponent(ref)}`).catch(() => {});
+    }
+    // Claim any pending referral conversion cookie (idempotent server-side).
+    fetch('/api/referral/claim', { method: 'POST' }).catch(() => {});
+  }, []);
+
+  // Returning users are redirected home; new visitors keep their destination.
   useEffect(() => {
     if (isSupabaseConfigured && supabase) {
       supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session) window.location.href = '/';
+        if (session) {
+          fireAttribution({ next: null, ref: getRefCode(), isSignup: false });
+          window.location.href = getNextPath() || '/';
+        }
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const checkUsername = useCallback(async (value) => {
@@ -85,6 +124,9 @@ export default function AuthPage() {
         return;
       }
 
+      const next = getNextPath();
+      const ref = getRefCode();
+
       if (mode === 'signup') {
         if (!username.trim() || username.length < 3) {
           setError('Username must be at least 3 characters');
@@ -116,7 +158,8 @@ export default function AuthPage() {
           email,
           password,
           options: {
-            data: { username: username.trim(), display_name: displayName.trim() || username.trim() }
+            data: { username: username.trim(), display_name: displayName.trim() || username.trim() },
+            emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next || '/')}`,
           }
         });
 
@@ -130,16 +173,21 @@ export default function AuthPage() {
             karma: 0,
             level: 'Newbie',
           });
-          setSuccess('Account created! Check your email to confirm. Redirecting...');
-          setTimeout(() => { window.location.href = '/'; }, 2000);
+          // Preserve the shared-link destination through signup (durable,
+          // resurrected by /auth/callback when email confirmation is used).
+          fireAttribution({ next, ref, isSignup: true });
+          setSuccess('Account created! Redirecting...');
+          setTimeout(() => { window.location.href = next || '/'; }, 1500);
         }
       } else {
-        const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
         if (signInError) {
           setError(signInError.message);
         } else {
+          // Real referral conversion on sign-in (idempotent, best-effort).
+          fireAttribution({ next, ref, isSignup: false });
           setSuccess('Welcome back! Redirecting...');
-          setTimeout(() => { window.location.href = '/'; }, 1000);
+          setTimeout(() => { window.location.href = next || '/'; }, 1000);
         }
       }
     } catch (err) {

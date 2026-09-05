@@ -5,10 +5,19 @@ import useSWR from 'swr';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { ProfileCardSkeleton, RoastItemSkeleton } from '@/components/Skeleton';
 import LiveStats from '@/components/LiveStats';
+import FriendChallenge from '@/components/FriendChallenge';
+import NotificationBell from '@/components/NotificationBell';
+import HeroBanner from '@/components/HeroBanner';
+import ErrorBoundary from '@/components/ErrorBoundary';
+import SmartRecommendations from '@/components/SmartRecommendations';
+import { trackActivationEvent } from '@/lib/onboarding';
+import { trackGrowthEvent } from '@/lib/experiments';
+import { trackShare } from '@/lib/growth/share';
+import { t } from '@/lib/lang';
 import { canRoast, recordRoastSuccess } from '@/lib/rateLimit';
 import {
   Flame, TrendingUp, Clock, Skull, ArrowBigUp, Share2,
-  Flag, MessageSquare, ArrowUpRight, Sparkles, Trophy, ChevronDown, Loader2, Plus
+  Flag, MessageSquare, ArrowUpRight, Sparkles, Trophy, ChevronDown, Loader2, Plus, Swords
 } from 'lucide-react';
 
 const PAGE_SIZE = 10;
@@ -329,6 +338,12 @@ export default function HomePage() {
     return () => { supabase.removeChannel(channel); };
   }, [mutateRoasts]);
 
+  // Track landing view for activation analytics
+  useEffect(() => {
+    trackActivationEvent('landing_viewed');
+    trackGrowthEvent('landing_viewed');
+  }, []);
+
   // Show toast helper
   const showToast = useCallback((text, type = 'info') => {
     setToast({ text, type });
@@ -385,9 +400,11 @@ export default function HomePage() {
         text: `"${roast.roast_text}" — via BURNBOARD`,
         url: window.location.href,
       });
+      trackShare({ resourceType: 'roast', resourceId: roast.id, channel: 'native' });
     } else {
       navigator.clipboard?.writeText(`"${roast.roast_text}" — via BURNBOARD ${window.location.href}`);
       showToast('Copied to clipboard');
+      trackShare({ resourceType: 'roast', resourceId: roast.id, channel: 'clipboard' });
     }
   };
 
@@ -479,14 +496,37 @@ export default function HomePage() {
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <header className="text-center space-y-2 py-6 border-b border-[#222]">
-          <div className="flex items-center justify-center gap-2 text-[#ff4d00]">
-            <Flame className="w-8 h-8 fill-[#ff4d00]" />
-            <h1 className="text-2xl font-black uppercase tracking-wider font-mono">BURNBOARD</h1>
+          <div className="flex items-center justify-between">
+            <div />
+            <div className="flex items-center justify-center gap-2 text-[#ff4d00]">
+              <Flame className="w-8 h-8 fill-[#ff4d00]" />
+              <h1 className="text-2xl font-black uppercase tracking-wider font-mono">BURNBOARD</h1>
+            </div>
+            <div className="flex items-center gap-2">
+              <NotificationBell />
+            </div>
           </div>
           <p className="text-xs text-zinc-400 font-mono">No AI. Just Humans Roasting Humans.</p>
           <div className="flex justify-center">
-            <LiveStats />
+            <ErrorBoundary title="Live Stats Unavailable">
+              <LiveStats />
+            </ErrorBoundary>
           </div>
+          <div className="flex justify-center pt-2">
+            <ErrorBoundary title="Challenge Unavailable">
+              <FriendChallenge variant="button" displayName="Someone" />
+            </ErrorBoundary>
+          </div>
+
+          {/* First-time visitor hero */}
+          <ErrorBoundary>
+            <HeroBanner />
+          </ErrorBoundary>
+
+          {/* Smart Recommendations */}
+          <ErrorBoundary>
+            <SmartRecommendations pathname="/" maxVisible={2} />
+          </ErrorBoundary>
         </header>
 
         {/* Search + Sort Tabs */}

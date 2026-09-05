@@ -25,7 +25,11 @@ export default function AdSlot({ slotIndex = 1 }) {
         .then(({ count }) => setProfileCount(count || 0))
         .catch(() => {});
     }
-  }, []);
+
+    // Ad impression (MP24, Section 87): real, disclosed inventory — recorded
+    // once per mount, never fabricated.
+    track('ad_impression', { slotIndex });
+  }, [slotIndex]);
 
   if (isAdFree) {
     return (
@@ -69,8 +73,8 @@ export default function AdSlot({ slotIndex = 1 }) {
           </h4>
           <p className="text-xs text-zinc-400 font-sans max-w-md">
             {profileCount > 0
-              ? `${profileCount} real eyeballs. Reach tech founders, roasted creators, and sharp comedy writers.`
-              : 'Reach thousands of tech founders, roasted creators, and sharp comedy writers every day.'}
+              ? `${profileCount} real profiles live on BurnBoard today. No fabricated reach — just real, disclosed placement.`
+              : 'Be the first brand on BurnBoard. Real profile counts are shown here as the platform grows — never invented.'}
           </p>
         </div>
 

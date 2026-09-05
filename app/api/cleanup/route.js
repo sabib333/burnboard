@@ -6,8 +6,9 @@ export async function GET(req) {
     const authHeader = req.headers.get('authorization');
     const cronSecret = process.env.CRON_SECRET;
     
-    // Optional secret verification if configured
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+    // Fail closed: without CRON_SECRET configured this route (which deletes
+    // rows) must never run.
+    if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

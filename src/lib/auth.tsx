@@ -125,7 +125,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email,
         password,
         options: {
-          data: { username, display_name: displayName || username }
+          data: { username, display_name: displayName || username },
+          emailRedirectTo: typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : undefined,
         }
       });
 

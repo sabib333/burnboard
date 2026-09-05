@@ -1,20 +1,66 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { BarChart3, Flame, Users, TrendingUp, Zap, ArrowLeft, Clock } from 'lucide-react';
+import {
+  BarChart3, Flame, Users, TrendingUp, ArrowLeft, Loader2,
+  Building2, Swords, Target, MessageSquare, AlertTriangle,
+} from 'lucide-react';
+
+/**
+ * /stats — Authentic platform stats (Master Prompt 23, Section 52).
+ *
+ * Every number is a REAL aggregate computed server-side from public tables
+ * (/api/stats). No fabricated social proof: if there is no data yet, the
+ * page says so instead of inventing numbers.
+ */
+
+function fmt(n) {
+  if (n === null || n === undefined) return '—';
+  return Number(n).toLocaleString();
+}
+
+function StatCard({ label, value, sub, accent, icon }) {
+  return (
+    <div className="bg-[#111] border border-[#222] p-4 rounded-2xl">
+      <span className="flex items-center gap-1.5 text-zinc-400 text-xs font-mono">
+        {icon}
+        <span>{label}</span>
+      </span>
+      <div className={`text-2xl font-black font-mono mt-1 ${accent || 'text-white'}`}>{fmt(value)}</div>
+      {sub && <div className="text-[10px] text-zinc-500 font-mono mt-0.5">{sub}</div>}
+    </div>
+  );
+}
 
 export default function StatsPage() {
-  const hourlyActivity = [
-    { hour: '12 AM', count: 12, pct: 15 },
-    { hour: '3 AM', count: 8, pct: 10 },
-    { hour: '6 AM', count: 18, pct: 22 },
-    { hour: '9 AM', count: 54, pct: 68 },
-    { hour: '12 PM', count: 72, pct: 90 },
-    { hour: '3 PM', count: 80, pct: 100 },
-    { hour: '6 PM', count: 65, pct: 81 },
-    { hour: '9 PM', count: 48, pct: 60 }
-  ];
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/stats')
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`stats ${r.status}`))))
+      .then((json) => {
+        if (!cancelled) {
+          setStats(json.stats || null);
+          if (json.configured === false) setError('Stats are not configured yet.');
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err?.message || 'Failed to load stats');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  const s = stats;
+  const weeklyAvg = s && s.roasts7d !== null && s.roasts7d !== undefined
+    ? Math.round(s.roasts7d / 7)
+    : null;
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white p-4 sm:p-6 font-sans">
@@ -32,44 +78,62 @@ export default function StatsPage() {
 
         <div className="bg-[#111] border border-[#222] rounded-3xl p-6 sm:p-8 space-y-3">
           <h1 className="text-2xl sm:text-3xl font-black font-mono">GLOBAL ROAST STATS</h1>
-          <p className="text-xs text-zinc-400 font-mono">Real-time stats across all platforms and profiles.</p>
+          <p className="text-xs text-zinc-400 font-mono">
+            Real aggregate numbers, straight from the platform. No fake stats — ever.
+          </p>
         </div>
 
-        {/* 4 KPIs */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className="bg-[#111] border border-[#222] p-4 rounded-2xl">
-            <span className="text-zinc-400 text-xs font-mono">Total Roasts</span>
-            <div className="text-2xl font-black font-mono text-white mt-1">1,420</div>
+        {loading && (
+          <div className="flex items-center justify-center gap-2 py-12 text-zinc-500 text-xs font-mono">
+            <Loader2 className="w-4 h-4 animate-spin" /> Crunching real numbers…
           </div>
-          <div className="bg-[#111] border border-[#222] p-4 rounded-2xl">
-            <span className="text-zinc-400 text-xs font-mono">Target Profiles</span>
-            <div className="text-2xl font-black font-mono text-white mt-1">128</div>
-          </div>
-          <div className="bg-[#111] border border-[#222] p-4 rounded-2xl">
-            <span className="text-zinc-400 text-xs font-mono">Avg / Target</span>
-            <div className="text-2xl font-black font-mono text-white mt-1">11.1</div>
-          </div>
-          <div className="bg-[#111] border border-[#222] p-4 rounded-2xl">
-            <span className="text-zinc-400 text-xs font-mono">Brutal Platform</span>
-            <div className="text-lg font-black font-mono text-red-400 mt-1">LinkedIn</div>
-          </div>
-        </div>
+        )}
 
-        {/* Hourly chart */}
-        <div className="bg-[#111] border border-[#222] p-5 rounded-2xl space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-mono font-bold text-white uppercase">Most Active Roasting Hours</h3>
-            <span className="text-xs font-mono text-zinc-400">Peak: 3:00 PM</span>
+        {error && !loading && (
+          <div className="bg-[#2a0a0a] border border-[#5a1a1a] rounded-2xl p-4 text-sm text-red-400 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 shrink-0" />
+            <span>{error}</span>
           </div>
-          <div className="h-36 flex items-end justify-between gap-2 pt-4 px-2 border-b border-[#222]">
-            {hourlyActivity.map(slot => (
-              <div key={slot.hour} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
-                <div className="w-full bg-gradient-to-t from-amber-500 to-[#ff4d00] rounded-t" style={{ height: `${slot.pct}%` }} />
-                <span className="text-[10px] font-mono text-zinc-500">{slot.hour}</span>
-              </div>
-            ))}
+        )}
+
+        {s && (
+          <>
+            {/* Core roast KPIs */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <StatCard label="Total Roasts" value={s.roasts} accent="text-[#ff4d00]" sub="all-time, visible only" />
+              <StatCard label="Roasts This Week" value={s.roasts7d} sub={weeklyAvg !== null ? `≈ ${fmt(weeklyAvg)}/day` : null} />
+              <StatCard label="Roasts Today" value={s.roastsToday} accent="text-emerald-400" sub="so far" />
+              <StatCard label="Hot Seats" value={s.hotSeats} sub="profiles on the seat" />
+            </div>
+
+            {/* Platform health */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <StatCard label="Members" value={s.members} icon={<Users className="w-3.5 h-3.5" />} />
+              <StatCard label="Communities" value={s.communities} sub="public communities" />
+              <StatCard label="Battles" value={s.battles} sub="1v1 roast battles" />
+              <StatCard label="Challenges" value={s.challenges} sub="open challenges" />
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <StatCard label="Posts" value={s.posts} sub="social posts" />
+              <StatCard label="Target Profiles" value={s.profiles} sub="profiles submitted" />
+            </div>
+
+            {/* Honesty note */}
+            <div className="bg-[#111] border border-[#222] rounded-2xl p-4 text-[11px] text-zinc-500 font-mono leading-relaxed">
+              <TrendingUp className="w-3.5 h-3.5 inline mr-1.5 text-[#ff4d00]" />
+              Counts include only visible (moderated-visible) content. Numbers update in near real time — no estimates, no rounding up.
+            </div>
+          </>
+        )}
+
+        {!s && !error && !loading && (
+          <div className="bg-[#111] border border-dashed border-[#333] rounded-2xl p-10 text-center space-y-2">
+            <Flame className="w-8 h-8 text-zinc-600 mx-auto" />
+            <p className="text-sm text-zinc-400 font-bold">No stats yet</p>
+            <p className="text-xs text-zinc-500">Real numbers will appear here as the first roasts roll in.</p>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

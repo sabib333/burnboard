@@ -39,6 +39,16 @@ import { LiveStats } from './components/LiveStats';
 import { NotificationsView } from './views/NotificationsView';
 import { useAuth } from './lib/auth';
 import { initMobileApp } from './lib/mobileSetup';
+// Phase 2: Hot Seat
+import { HotSeatView } from './views/HotSeatView';
+// Phase 5: Burn Report
+import { BurnReportView } from './views/BurnReportView';
+// Phase 6: Challenges
+import { ChallengesView } from './views/ChallengesView';
+// Phase 8: Trending
+import { TrendingView } from './views/TrendingView';
+// Phase 9: Enhanced Leaderboard
+import { EnhancedLeaderboardView } from './views/EnhancedLeaderboardView';
 import { registerForPushNotifications } from './lib/pushNotifications';
 import { notifyRoastOnProfile, notifyUpvoteMilestone } from './lib/notify';
 import { notificationQueue } from './lib/notificationQueue';
@@ -152,6 +162,14 @@ export default function App() {
         setCurrentView('settings');
       } else if (hash === 'notifications') {
         setCurrentView('notifications');
+      } else if (hash.startsWith('hot-seat/')) {
+        setCurrentView('hotSeat');
+      } else if (hash === 'burn-report') {
+        setCurrentView('burnReport');
+      } else if (hash === 'challenges') {
+        setCurrentView('challenges');
+      } else if (hash === 'trending') {
+        setCurrentView('trending');
       } else if (hash === '404') {
         setCurrentView('404');
       } else {
@@ -280,8 +298,8 @@ export default function App() {
   };
 
   // Roast submission
-  const handleSubmitRoast = async (profileId: string, roastText: string, anonId: string) => {
-    await DataStore.createRoast(profileId, roastText, anonId, user?.id);
+  const handleSubmitRoast = async (profileId: string, roastText: string, anonId: string, savageLevel?: string) => {
+    await DataStore.createRoast(profileId, roastText, anonId, user?.id, savageLevel);
     await refreshState();
     if (user?.id) updateActivity(user.id);
     
@@ -619,8 +637,10 @@ export default function App() {
             )}
 
             {currentView === 'world' && (
-              <WorldLeaderboardView
-                onShowToast={(title, msg) => addToast(title, msg, 'flame')}
+              <EnhancedLeaderboardView
+                onBack={handleBackToFeed}
+                onOpenProfile={handleOpenProfile}
+                onShowToast={(text, sub) => addToast(text, sub, 'flame')}
               />
             )}
 
@@ -670,6 +690,42 @@ export default function App() {
             {currentView === 'terms' && (
               <TermsView
                 onBack={() => setCurrentView('feed')}
+              />
+            )}
+
+            {currentView === 'hotSeat' && (
+              <HotSeatView
+                profile={activeProfile || profiles[0]}
+                roasts={activeProfile ? roasts.filter(r => r.profile_id === activeProfile.id) : []}
+                onBack={handleBackToFeed}
+                onSubmitRoast={handleSubmitRoast}
+                onUpvoteRoast={handleUpvoteRoast}
+                onReactRoast={handleReactRoast}
+                onShareRoast={handleShareRoast}
+                onReportRoast={handleReportRoast}
+                onTriggerWarning={(msg, sub) => addToast(msg, sub, 'warning')}
+                onShowToast={(text, sub) => addToast(text, sub, 'flame')}
+              />
+            )}
+
+            {currentView === 'burnReport' && (
+              <BurnReportView
+                onBack={handleBackToFeed}
+                onShowToast={(text, sub) => addToast(text, sub, 'flame')}
+              />
+            )}
+
+            {currentView === 'challenges' && (
+              <ChallengesView
+                onBack={handleBackToFeed}
+                onShowToast={(text, sub) => addToast(text, sub, 'flame')}
+              />
+            )}
+
+            {currentView === 'trending' && (
+              <TrendingView
+                onOpenProfile={handleOpenProfile}
+                onShowToast={(text, sub) => addToast(text, sub, 'flame')}
               />
             )}
 
@@ -778,6 +834,15 @@ export default function App() {
               </button>
               <button onClick={() => setCurrentView('world')} className="hover:text-white transition-colors">
                 World
+              </button>
+              <button onClick={() => setCurrentView('trending')} className="hover:text-white transition-colors">
+                Trending
+              </button>
+              <button onClick={() => setCurrentView('challenges')} className="hover:text-white transition-colors">
+                Challenges
+              </button>
+              <button onClick={() => setCurrentView('burnReport')} className="hover:text-white transition-colors">
+                Report
               </button>
               <LanguageSwitcher />
               {isInstallable && (

@@ -1,5 +1,8 @@
 import './globals.css';
 import { Analytics } from '@vercel/analytics/react';
+import LocaleProvider from '@/components/LocaleProvider';
+import SocialShell from '@/components/SocialShell';
+import ReferralLinkProbe from '@/components/growth/ReferralLinkProbe';
 
 export const metadata = {
   metadataBase: new URL('https://burnboard.app'),
@@ -94,7 +97,12 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body className="bg-[#0a0a0a] text-[#f0f0f0] min-h-screen font-sans selection:bg-[#ff4d00] selection:text-white">
-        {children}
+        <LocaleProvider>
+          <SocialShell>
+            {children}
+          </SocialShell>
+        </LocaleProvider>
+        <ReferralLinkProbe />
         <Analytics />
       </body>
     </html>

@@ -1,23 +1,81 @@
 @import "tailwindcss";
 
+/* ═══════════════════════════════════════════════════════════
+   BURNBOARD DESIGN SYSTEM — Design Tokens
+   Global CSS custom properties for colors, spacing, typography.
+   All new components should reference these tokens.
+   Existing components are untouched and continue using Tailwind classes.
+   ═══════════════════════════════════════════════════════════ */
+
 @layer base {
   :root {
+    /* ── Color Tokens ─────────────────────────────────────── */
     --color-burn: #ff4d00;
+    --color-burn-hover: #ff6622;
     --color-bg-primary: #0a0a0a;
     --color-bg-surface: #111111;
     --color-bg-elevated: #1a1a1a;
+    --color-bg-input: #0a0a0a;
+    --color-border: #222222;
+    --color-border-hover: #333333;
+    --color-border-active: #ff4d00;
+    --color-text-primary: #f0f0f0;
+    --color-text-secondary: #a1a1aa;
+    --color-text-muted: #71717a;
+    --color-text-inverse: #000000;
+    --color-success: #22c55e;
+    --color-warning: #f59e0b;
+    --color-error: #ef4444;
+    --color-info: #3b82f6;
+
+    /* ── Spacing Scale ─────────────────────────────────────── */
+    --space-0: 0px;
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-8: 32px;
+    --space-10: 40px;
+    --space-12: 48px;
+    --space-16: 64px;
+
+    /* ── Border Radius ─────────────────────────────────────── */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    --radius-2xl: 24px;
+    --radius-full: 9999px;
+
+    /* ── Typography ────────────────────────────────────────── */
+    --font-sans: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+
+    /* ── Shadows ───────────────────────────────────────────── */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+    --shadow-burn: 0 0 15px rgba(255, 77, 0, 0.3);
+    --shadow-burn-lg: 0 0 25px rgba(255, 77, 0, 0.4);
+
+    /* ── Transitions ───────────────────────────────────────── */
+    --transition-fast: 150ms ease;
+    --transition-base: 200ms ease;
+    --transition-slow: 300ms ease;
   }
 
   body {
-    background-color: #0a0a0a;
-    color: #f0f0f0;
-    font-family: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
+    background-color: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   code, .font-mono {
-    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+    font-family: var(--font-mono);
   }
 
   ::-webkit-scrollbar {
@@ -25,7 +83,7 @@
     height: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: #0a0a0a;
+    background: var(--color-bg-primary);
   }
   ::-webkit-scrollbar-thumb {
     background: #333;
@@ -36,7 +94,7 @@
   }
 
   ::selection {
-    background-color: #ff4d00;
+    background-color: var(--color-burn);
     color: white;
   }
 }
@@ -50,8 +108,20 @@
     animation: slideUp 0.4s ease-out;
   }
 
+  .animate-slide-in-right {
+    animation: slideInRight 0.3s ease-out;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.2s ease-out;
+  }
+
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
   }
 
   .line-clamp-2 {
@@ -67,6 +137,25 @@
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
   }
+
+  /* Social Shell Layout */
+  .social-shell {
+    display: flex;
+    min-height: 100dvh;
+  }
+
+  .social-shell-content {
+    flex: 1;
+    min-width: 0;
+    padding-bottom: 72px; /* mobile bottom nav height */
+  }
+
+  @media (min-width: 1024px) {
+    .social-shell-content {
+      padding-bottom: 0;
+      margin-left: 260px; /* desktop sidebar width */
+    }
+  }
 }
 
 @keyframes fadeIn {
@@ -77,4 +166,14 @@
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
 }

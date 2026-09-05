@@ -11,11 +11,20 @@ import { validateInput, roastSchema } from '../lib/validation';
 import { sanitize, detectXssAttempt } from '../lib/sanitize';
 import { checkRateLimitClient, checkDuplicate, setCooldown } from '../lib/rateLimitAdvanced';
 
+type SavageLevel = 'mild' | 'savage' | 'toxic' | 'bangla';
+
+const SAVAGE_LEVELS: { id: SavageLevel; label: string; emoji: string; color: string }[] = [
+  { id: 'mild', label: 'Mild', emoji: '😏', color: 'text-zinc-400 border-zinc-600 hover:border-zinc-400' },
+  { id: 'savage', label: 'Savage', emoji: '🔥', color: 'text-[#ff4d00] border-[#ff4d00]/50 hover:border-[#ff4d00]' },
+  { id: 'toxic', label: 'Toxic', emoji: '☠️', color: 'text-red-400 border-red-500/50 hover:border-red-400' },
+  { id: 'bangla', label: 'Bangla', emoji: '🇧🇩', color: 'text-green-400 border-green-500/50 hover:border-green-400' },
+];
+
 interface RoastInputProps {
   profileId: string;
   targetUsername: string;
   targetPlatform: string;
-  onSubmitRoast: (profileId: string, roastText: string, anonId: string) => Promise<void>;
+  onSubmitRoast: (profileId: string, roastText: string, anonId: string, savageLevel?: SavageLevel) => Promise<void>;
   onTriggerWarning: (message: string, subtext?: string) => void;
 }
 
@@ -27,6 +36,7 @@ export const RoastInput: React.FC<RoastInputProps> = ({
   onTriggerWarning
 }) => {
   const [text, setText] = useState('');
+  const [savageLevel, setSavageLevel] = useState<SavageLevel>('savage');
   const [honeypot, setHoneypot] = useState('');
   const { user, userProfile } = useAuth();
   const [anonId, setAnonId] = useState(() => getOrCreateAnonId());
@@ -115,7 +125,7 @@ export const RoastInput: React.FC<RoastInputProps> = ({
     setSubmitting(true);
     try {
       const currentAnon = getOrCreateAnonId();
-      await onSubmitRoast(profileId, cleanText, currentAnon);
+      await onSubmitRoast(profileId, cleanText, currentAnon, savageLevel);
       recordRoastSuccess(profileId, cleanText);
       checkDuplicate(cleanText, profileId); // Record for duplicate check
       setCooldown('roast', 30000); // 30s cooldown
@@ -143,6 +153,25 @@ export const RoastInput: React.FC<RoastInputProps> = ({
           <Lightbulb className="w-3.5 h-3.5" />
           <span>{t('inspiration')}</span>
         </button>
+
+        {/* Savage Level Selector */}
+        <div className="flex items-center gap-1 ml-auto">
+          {SAVAGE_LEVELS.map(level => (
+            <button
+              key={level.id}
+              onClick={() => setSavageLevel(level.id)}
+              className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-mono font-bold border transition-all ${
+                savageLevel === level.id
+                  ? `${level.color} bg-current/10`
+                  : 'text-zinc-600 border-transparent hover:text-zinc-400'
+              }`}
+              title={`Set savage level: ${level.label}`}
+            >
+              <span>{level.emoji}</span>
+              <span className="hidden md:inline">{level.label}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="flex items-center gap-2 bg-[#1a1a1a] hover:bg-[#1e1e1e] p-1.5 sm:p-2 rounded-xl border border-[#333] focus-within:border-[#ff4d00]/80 focus-within:ring-1 focus-within:ring-[#ff4d00]/30 transition-all">

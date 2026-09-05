@@ -37,9 +37,15 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
 RESEND_API_KEY=re_123456789
 RATE_LIMIT_SALT=burnboard_secure_salt_2024
-CRON_SECRET=burnboard_cron_secret_key
+CRON_SECRET=generate-a-long-random-value
+ADMIN_PASSWORD=generate-a-long-random-value
 NEXT_PUBLIC_SITE_URL=https://your-domain.vercel.app
 ```
+
+The admin dashboards (`/admin`, `/admin/growth`, `/admin/financials`,
+`/admin/infrastructure`, `/admin/security`) **fail closed**: if
+`ADMIN_PASSWORD` is not set, they return `503 admin_not_configured` — there
+is no default password (see `docs/security/SECURITY_MODEL.md`).
 
 ---
 
@@ -66,4 +72,4 @@ This automatically runs daily at 00:00 UTC to:
 - **30-Second Client Shield**: Prevents rapid clicking and rate limit fatigue.
 - **IP Hashing & 5 Burns / 10 Min Window**: Halts bot-driven DDoS attempts.
 - **1-Hour Duplicate Detection**: Forces unique, original burns per victim.
-- **Admin Moderation Console**: Password-protected (`burn2024`) with live metric feeds and one-click JSON database backups.
+- **Admin dashboards**: gated by the `ADMIN_PASSWORD` environment variable (fail-closed, server-verified — no default) with live metric feeds and one-click JSON database backups.

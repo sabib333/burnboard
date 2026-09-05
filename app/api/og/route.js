@@ -212,6 +212,382 @@ export async function GET(request) {
       );
     }
 
+    // ── BURN SCORE CARD ────────────────────────────────────
+    if (template === 'burn-score') {
+      const burnScore = searchParams.get('score') || '0';
+      const statusLabel = searchParams.get('status') || 'Untouched';
+      const statusEmoji = searchParams.get('statusEmoji') || '😴';
+      const roastCount = searchParams.get('roastCount') || '0';
+      const displayName = searchParams.get('displayName') || 'Someone';
+
+      // Score color gradient
+      const scoreNum = parseInt(burnScore) || 0;
+      let scoreColor = '#71717a';
+      if (scoreNum >= 80) scoreColor = '#ff4d00';
+      else if (scoreNum >= 60) scoreColor = '#ef4444';
+      else if (scoreNum >= 35) scoreColor = '#f97316';
+      else if (scoreNum >= 15) scoreColor = '#f59e0b';
+
+      return new ImageResponse(
+        (
+          <div
+            style={{
+              height: '100%',
+              width: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              backgroundColor: '#0a0a0a',
+              backgroundImage: 'radial-gradient(circle at 25px 25px, #1a1a1a 2%, transparent 0%), radial-gradient(circle at 75px 75px, #141414 2%, transparent 0%)',
+              backgroundSize: '80px 80px',
+              padding: '75px',
+              fontFamily: 'Inter, sans-serif',
+              border: '16px solid #222222',
+              color: '#f0f0f0',
+              boxSizing: 'border-box',
+            }}
+          >
+            {/* Top Brand */}
+            <div style={{ display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <span style={{ fontSize: '48px' }}>🔥</span>
+                <span style={{ fontSize: '38px', fontWeight: 900, letterSpacing: '-1.5px', textTransform: 'uppercase', fontStyle: 'italic', color: '#ffffff' }}>
+                  BURN BOARD
+                </span>
+              </div>
+              <div
+                style={{
+                  backgroundColor: '#161616',
+                  border: '2px solid #333333',
+                  padding: '10px 24px',
+                  borderRadius: '999px',
+                  fontSize: '20px',
+                  fontWeight: 800,
+                  color: '#ff4d00',
+                  textTransform: 'uppercase',
+                  letterSpacing: '1px',
+                }}
+              >
+                BURN REPORT
+              </div>
+            </div>
+
+            {/* Center: Score */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', margin: 'auto 0' }}>
+              <div style={{ fontSize: '32px', color: '#a1a1aa', fontWeight: 600 }}>
+                {displayName} got roasted by the internet
+              </div>
+              <div style={{ fontSize: '28px', color: '#71717a', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '3px' }}>
+                BURN SCORE
+              </div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
+                <span style={{ fontSize: '140px', fontWeight: 900, color: scoreColor, lineHeight: 1 }}>
+                  {burnScore}
+                </span>
+                <span style={{ fontSize: '48px', fontWeight: 700, color: '#555555' }}>/100</span>
+              </div>
+              <div
+                style={{
+                  fontSize: '36px',
+                  fontWeight: 900,
+                  color: scoreColor,
+                  textTransform: 'uppercase',
+                  letterSpacing: '2px',
+                  marginTop: '8px',
+                }}
+              >
+                {statusEmoji} {statusLabel}
+              </div>
+              <div style={{ fontSize: '24px', color: '#71717a', marginTop: '8px' }}>
+                {roastCount} roasts received
+              </div>
+            </div>
+
+            {/* Bottom CTA & Footer */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', width: '100%' }}>
+              <div
+                style={{
+                  backgroundColor: '#ff4d00',
+                  color: '#000000',
+                  padding: '16px 48px',
+                  borderRadius: '16px',
+                  fontSize: '24px',
+                  fontWeight: 900,
+                  textTransform: 'uppercase',
+                  letterSpacing: '1px',
+                }}
+              >
+                CAN YOU SURVIVE THE INTERNET?
+              </div>
+              <div
+                style={{
+                  display: 'flex',
+                  width: '100%',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  borderTop: '2px solid #222222',
+                  paddingTop: '28px',
+                  fontSize: '22px',
+                }}
+              >
+                <div style={{ color: '#a1a1aa', fontWeight: 600 }}>Put yourself on the <span style={{ color: '#ffffff', fontWeight: 800 }}>Hot Seat</span></div>
+                <div style={{ color: '#ff4d00', fontWeight: 900, letterSpacing: '0.5px' }}>burnboard.app</div>
+              </div>
+            </div>
+          </div>
+        ),
+        { width: 1080, height: 1080 }
+      );
+    }
+
+    // ── BURN TOP ROAST CARD ─────────────────────────────────
+    if (template === 'burn-roast') {
+      const roastText = searchParams.get('text') || 'No roasts yet';
+      const roastCategory = searchParams.get('category') || '🔥';
+      const roastCategoryLabel = searchParams.get('categoryLabel') || 'Top Roast';
+      const displayName = searchParams.get('displayName') || 'Someone';
+      const burnScore = searchParams.get('score') || '0';
+      const roastCount = searchParams.get('roastCount') || '0';
+
+      const fontSize = roastText.length > 140 ? '42px' : roastText.length > 80 ? '48px' : '54px';
+
+      return new ImageResponse(
+        (
+          <div
+            style={{
+              height: '100%',
+              width: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              backgroundColor: '#0a0a0a',
+              backgroundImage: 'radial-gradient(circle at 25px 25px, #1a1a1a 2%, transparent 0%), radial-gradient(circle at 75px 75px, #141414 2%, transparent 0%)',
+              backgroundSize: '80px 80px',
+              padding: '75px',
+              fontFamily: 'Inter, sans-serif',
+              border: '16px solid #222222',
+              color: '#f0f0f0',
+              boxSizing: 'border-box',
+            }}
+          >
+            {/* Top Brand */}
+            <div style={{ display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <span style={{ fontSize: '48px' }}>🔥</span>
+                <span style={{ fontSize: '38px', fontWeight: 900, letterSpacing: '-1.5px', textTransform: 'uppercase', fontStyle: 'italic', color: '#ffffff' }}>
+                  BURN BOARD
+                </span>
+              </div>
+              <div
+                style={{
+                  backgroundColor: '#ff4d00',
+                  color: '#000000',
+                  padding: '10px 24px',
+                  borderRadius: '999px',
+                  fontSize: '20px',
+                  fontWeight: 900,
+                  textTransform: 'uppercase',
+                  letterSpacing: '1px',
+                }}
+              >
+                {roastCategory} {roastCategoryLabel}
+              </div>
+            </div>
+
+            {/* Center: The Roast */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '28px', margin: 'auto 0', maxWidth: '900px' }}>
+              <div style={{ fontSize: '28px', color: '#a1a1aa', fontWeight: 600 }}>
+                THE INTERNET SAID:
+              </div>
+              <div
+                style={{
+                  fontSize,
+                  fontWeight: 800,
+                  lineHeight: 1.3,
+                  color: '#ffffff',
+                  textAlign: 'center',
+                  letterSpacing: '-0.5px',
+                }}
+              >
+                &ldquo;{roastText}&rdquo;
+              </div>
+              <div style={{ fontSize: '22px', color: '#71717a' }}>
+                — {displayName}&apos;s Hot Seat
+              </div>
+            </div>
+
+            {/* Bottom Stats & Footer */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', width: '100%' }}>
+              <div style={{ display: 'flex', gap: '32px', fontSize: '22px', color: '#a1a1aa' }}>
+                <span>🔥 Score: <span style={{ color: '#ff4d00', fontWeight: 900 }}>{burnScore}/100</span></span>
+                <span>•</span>
+                <span>{roastCount} roasts</span>
+              </div>
+              <div
+                style={{
+                  display: 'flex',
+                  width: '100%',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  borderTop: '2px solid #222222',
+                  paddingTop: '28px',
+                  fontSize: '22px',
+                }}
+              >
+                <div style={{ color: '#a1a1aa', fontWeight: 600 }}>Can you survive the <span style={{ color: '#ffffff', fontWeight: 800 }}>internet</span>?</div>
+                <div style={{ color: '#ff4d00', fontWeight: 900, letterSpacing: '0.5px' }}>burnboard.app</div>
+              </div>
+            </div>
+          </div>
+        ),
+        { width: 1080, height: 1080 }
+      );
+    }
+
+    // ── BURN SUMMARY CARD ───────────────────────────────────
+    if (template === 'burn-summary') {
+      const burnScore = searchParams.get('score') || '0';
+      const statusLabel = searchParams.get('status') || 'Untouched';
+      const statusEmoji = searchParams.get('statusEmoji') || '😴';
+      const roastCount = searchParams.get('roastCount') || '0';
+      const displayName = searchParams.get('displayName') || 'Someone';
+      const topRoast = searchParams.get('topRoast') || '';
+      const totalReactions = searchParams.get('totalReactions') || '0';
+
+      const scoreNum = parseInt(burnScore) || 0;
+      let scoreColor = '#71717a';
+      if (scoreNum >= 80) scoreColor = '#ff4d00';
+      else if (scoreNum >= 60) scoreColor = '#ef4444';
+      else if (scoreNum >= 35) scoreColor = '#f97316';
+      else if (scoreNum >= 15) scoreColor = '#f59e0b';
+
+      return new ImageResponse(
+        (
+          <div
+            style={{
+              height: '100%',
+              width: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              backgroundColor: '#0a0a0a',
+              backgroundImage: 'radial-gradient(circle at 25px 25px, #1a1a1a 2%, transparent 0%), radial-gradient(circle at 75px 75px, #141414 2%, transparent 0%)',
+              backgroundSize: '80px 80px',
+              padding: '75px',
+              fontFamily: 'Inter, sans-serif',
+              border: '16px solid #222222',
+              color: '#f0f0f0',
+              boxSizing: 'border-box',
+            }}
+          >
+            {/* Top Brand */}
+            <div style={{ display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <span style={{ fontSize: '48px' }}>🔥</span>
+                <span style={{ fontSize: '38px', fontWeight: 900, letterSpacing: '-1.5px', textTransform: 'uppercase', fontStyle: 'italic', color: '#ffffff' }}>
+                  BURN BOARD
+                </span>
+              </div>
+              <div
+                style={{
+                  backgroundColor: '#161616',
+                  border: '2px solid #333333',
+                  padding: '10px 24px',
+                  borderRadius: '999px',
+                  fontSize: '20px',
+                  fontWeight: 800,
+                  color: '#ff4d00',
+                  textTransform: 'uppercase',
+                  letterSpacing: '1px',
+                }}
+              >
+                BURN REPORT
+              </div>
+            </div>
+
+            {/* Center: Summary */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', margin: 'auto 0', width: '100%' }}>
+              {/* Score Row */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '24px', marginBottom: '8px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <div style={{ fontSize: '20px', color: '#71717a', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '4px' }}>Score</div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                    <span style={{ fontSize: '72px', fontWeight: 900, color: scoreColor, lineHeight: 1 }}>{burnScore}</span>
+                    <span style={{ fontSize: '28px', fontWeight: 700, color: '#555555' }}>/100</span>
+                  </div>
+                </div>
+                <div style={{ width: '2px', height: '80px', backgroundColor: '#333333' }} />
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <div style={{ fontSize: '20px', color: '#71717a', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '4px' }}>Status</div>
+                  <div style={{ fontSize: '28px', fontWeight: 900, color: scoreColor }}>{statusEmoji} {statusLabel}</div>
+                </div>
+              </div>
+
+              {/* Stats Row */}
+              <div style={{ display: 'flex', gap: '40px', fontSize: '22px', color: '#a1a1aa' }}>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '32px', fontWeight: 900, color: '#ffffff' }}>{roastCount}</div>
+                  <div style={{ fontSize: '18px', color: '#71717a' }}>Roasts</div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '32px', fontWeight: 900, color: '#ffffff' }}>{totalReactions}</div>
+                  <div style={{ fontSize: '18px', color: '#71717a' }}>Reactions</div>
+                </div>
+              </div>
+
+              {/* Top Roast */}
+              {topRoast && (
+                <div style={{ marginTop: '12px', padding: '24px', backgroundColor: '#111111', border: '2px solid #333333', borderRadius: '20px', width: '100%' }}>
+                  <div style={{ fontSize: '16px', color: '#71717a', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '12px' }}>
+                    🔥 TOP ROAST
+                  </div>
+                  <div style={{ fontSize: '26px', fontWeight: 800, lineHeight: 1.35, color: '#ffffff' }}>
+                    &ldquo;{topRoast.length > 200 ? topRoast.slice(0, 197) + '...' : topRoast}&rdquo;
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Bottom CTA & Footer */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', width: '100%' }}>
+              <div
+                style={{
+                  backgroundColor: '#ff4d00',
+                  color: '#000000',
+                  padding: '14px 40px',
+                  borderRadius: '14px',
+                  fontSize: '22px',
+                  fontWeight: 900,
+                  textTransform: 'uppercase',
+                  letterSpacing: '1px',
+                }}
+              >
+                CAN YOU SURVIVE THE INTERNET?
+              </div>
+              <div
+                style={{
+                  display: 'flex',
+                  width: '100%',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  borderTop: '2px solid #222222',
+                  paddingTop: '24px',
+                  fontSize: '22px',
+                }}
+              >
+                <div style={{ color: '#a1a1aa', fontWeight: 600 }}>{displayName}&apos;s <span style={{ color: '#ffffff', fontWeight: 800 }}>Burn Report</span></div>
+                <div style={{ color: '#ff4d00', fontWeight: 900, letterSpacing: '0.5px' }}>burnboard.app</div>
+              </div>
+            </div>
+          </div>
+        ),
+        { width: 1080, height: 1080 }
+      );
+    }
+
     // ── Default: ROAST TEMPLATE ──────────────────────────────
     return new ImageResponse(
       (

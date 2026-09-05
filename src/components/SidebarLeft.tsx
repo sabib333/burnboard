@@ -1,5 +1,5 @@
 import React from 'react';
-import { Flame, Swords, Trophy, Globe, ShieldCheck } from 'lucide-react';
+import { Flame, Swords, Trophy, Globe, ShieldCheck, TrendingUp, Zap, FileText } from 'lucide-react';
 import { ViewMode, Profile } from '../types';
 import { ProductHuntBadge } from './ProductHuntBadge';
 
@@ -130,6 +130,57 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({
           </div>
           <span className="text-[10px] font-mono bg-amber-500/10 text-amber-400 px-1.5 py-0.5 rounded">
             🌍
+          </span>
+        </button>
+
+        <button
+          onClick={() => onNavigate('trending')}
+          className={`flex items-center justify-between px-3 py-2 rounded-xl transition-all ${
+            currentView === 'trending'
+              ? 'bg-[#1a1a1a] text-white border border-[#333] font-bold shadow-sm'
+              : 'text-zinc-400 hover:text-white hover:bg-[#141414]'
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            <TrendingUp className={`w-4 h-4 ${currentView === 'trending' ? 'text-orange-400' : 'text-zinc-500'}`} />
+            <span className="text-xs font-mono">Trending</span>
+          </div>
+          <span className="text-[10px] font-mono bg-orange-500/10 text-orange-400 px-1.5 py-0.5 rounded">
+            📈
+          </span>
+        </button>
+
+        <button
+          onClick={() => onNavigate('challenges')}
+          className={`flex items-center justify-between px-3 py-2 rounded-xl transition-all ${
+            currentView === 'challenges'
+              ? 'bg-[#1a1a1a] text-white border border-[#333] font-bold shadow-sm'
+              : 'text-zinc-400 hover:text-white hover:bg-[#141414]'
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            <Zap className={`w-4 h-4 ${currentView === 'challenges' ? 'text-yellow-400' : 'text-zinc-500'}`} />
+            <span className="text-xs font-mono">Challenges</span>
+          </div>
+          <span className="text-[10px] font-mono bg-yellow-500/10 text-yellow-400 px-1.5 py-0.5 rounded">
+            ⚡
+          </span>
+        </button>
+
+        <button
+          onClick={() => onNavigate('burnReport')}
+          className={`flex items-center justify-between px-3 py-2 rounded-xl transition-all ${
+            currentView === 'burnReport'
+              ? 'bg-[#1a1a1a] text-white border border-[#333] font-bold shadow-sm'
+              : 'text-zinc-400 hover:text-white hover:bg-[#141414]'
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            <FileText className={`w-4 h-4 ${currentView === 'burnReport' ? 'text-purple-400' : 'text-zinc-500'}`} />
+            <span className="text-xs font-mono">Burn Report</span>
+          </div>
+          <span className="text-[10px] font-mono bg-purple-500/10 text-purple-400 px-1.5 py-0.5 rounded">
+            📊
           </span>
         </button>
 
